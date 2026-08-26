@@ -1,0 +1,27 @@
+# Fictional existing dealer inventory close to the six-month vega and crash limits.
+desk_portfolio_id: fictional-desk-capacity-constrained-v1
+schema_version: "1.0"
+valuation_timestamp: "2026-01-30T15:30:00+05:30"
+market_snapshot_id: pricing-snapshot-2026-01-30
+risk_model_version: fictional-approved-risk-v1
+
+# This state supports AC-11: the same proposed trade can have a different outcome
+# solely because the desk starts with less available risk capacity.
+positions:
+  - position_id: existing-nifty-short-vol-book
+    description: Existing concentrated NIFTY volatility inventory
+    underlying: NIFTY
+    instrument_type: OPTION
+    net_index_delta_inr: "118000000"
+    one_month_vega_inr_per_vol_point: "1900000"
+    six_month_vega_inr_per_vol_point: "5300000"
+    crash_stress_pnl_inr: "-43000000"
+
+  - position_id: existing-banknifty-futures-book
+    description: Existing BANKNIFTY futures inventory
+    underlying: BANKNIFTY
+    instrument_type: FUTURE
+    net_index_delta_inr: "7000000"
+    one_month_vega_inr_per_vol_point: "0"
+    six_month_vega_inr_per_vol_point: "0"
+    crash_stress_pnl_inr: "-2000000"

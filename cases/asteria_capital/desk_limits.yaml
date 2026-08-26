@@ -1,0 +1,28 @@
+# Fictional dealer risk limits — version one
+#
+# These are project assumptions for the fictional trading desk. They do not
+# represent the limits of any real bank or dealer.
+
+desk_limits_id: fictional-desk-limits-v1
+schema_version: "1.0"
+
+limits:
+  # Maximum directional index exposure left after the intended dealer hedge.
+  max_absolute_net_index_delta_inr: 150000000  # ₹15 crore equivalent
+
+  # Maximum volatility exposure, measured in rupees per volatility point.
+  max_one_month_vega_inr_per_vol_point: 2500000  # ₹25 lakh
+  max_six_month_vega_inr_per_vol_point: 6000000  # ₹60 lakh
+
+  # Maximum permitted loss in the approved market-crash stress scenario.
+  max_crash_stress_loss_inr: 50000000  # ₹5 crore
+
+  # Liquidity limits under normal market conditions.
+  max_market_participation: "10%"  # Share of normal daily traded volume
+  max_liquidation_trading_days: 3
+
+  # Reserve above this level requires escalation and additional approval.
+  max_model_reserve_fraction_of_clean_value: "15%"
+
+  # Show a warning once any risk limit reaches this utilization level.
+  warning_utilization: "80%"

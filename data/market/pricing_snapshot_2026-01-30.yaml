@@ -1,0 +1,141 @@
+# Point-in-time pricing inputs assembled for the Asteria case study.
+# IMPORTANT: the configured 2026-07-30 option contracts were not listed on NSE
+# on this date. Values under indicative_interpolation are model inputs inferred
+# from bracketing listed expiries, not executable market quotes.
+
+schema_version: "1.0"
+snapshot_id: nse-fo-2026-01-30-eod
+valuation_timestamp: "2026-01-30T15:30:00+05:30"
+currency: INR
+status: INDICATIVE_NON_EXECUTABLE
+
+sources:
+  nse_fo_udiff_bhavcopy:
+    url: >-
+      https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_20260130_F_0000.csv.zip
+    archive_sha256: f99c274aad1807bb8344452a8ef33d7f15568c78c9bc5496e39f90ae7544e48f
+    archive_entry: BhavCopy_NSE_FO_0_0_0_20260130_F_0000.csv
+  rbi_tbill_auction_2026_01_28:
+    url: >-
+      https://policyindex.ai/in/gazette/treasury-bills-full-auction-result-0w5rqn
+    note: Latest T-bill auction available before the valuation timestamp.
+  india_vix_history:
+    url: https://uk.finance.yahoo.com/quote/%5EINDIAVIX/history/
+    note: Reference only; 30-day India VIX is not a six-month strike volatility.
+
+observed_market:
+  spots:
+    NIFTY: "25320.65"
+    BANKNIFTY: "59610.45"
+  india_vix_close: "13.63%"
+  treasury_bill_yields:
+    # Auction cut-off yields. These are not a complete continuously compounded curve.
+    91_day: "5.4997%"
+    182_day: "5.6793%"
+    364_day: "5.7391%"
+
+configured_contract_availability:
+  - underlying: NIFTY
+    expiry: "2026-07-30"
+    strike: "24000"
+    option_type: PUT
+    listed_on_snapshot_date: false
+  - underlying: NIFTY
+    expiry: "2026-07-30"
+    strike: "22800"
+    option_type: PUT
+    listed_on_snapshot_date: false
+  - underlying: BANKNIFTY
+    expiry: "2026-07-30"
+    strike: "56600"
+    option_type: PUT
+    listed_on_snapshot_date: false
+
+listed_expiry_brackets:
+  earlier: "2026-06-30"
+  later: "2026-09-29"
+
+observed_bracketing_contracts:
+  # Prices are NSE end-of-day settlement prices. Volume and OI are in the
+  # archive's units. Zero-volume rows are theoretical settlement observations.
+  - underlying: NIFTY
+    expiry: "2026-06-30"
+    strike: "23000"
+    call_settlement: "2877.90"
+    put_settlement: "100.55"
+    call_volume: 18
+    put_volume: 1776
+    call_open_interest: 33105
+    put_open_interest: 504325
+    exchange_lot_size: 65
+  - underlying: NIFTY
+    expiry: "2026-06-30"
+    strike: "24000"
+    call_settlement: "2170.80"
+    put_settlement: "192.45"
+    call_volume: 213
+    put_volume: 3627
+    call_open_interest: 130490
+    put_open_interest: 757275
+    exchange_lot_size: 65
+  - underlying: NIFTY
+    expiry: "2026-09-29"
+    strike: "24000"
+    call_settlement: "2381.60"
+    put_settlement: "257.30"
+    call_volume: 0
+    put_volume: 689
+    call_open_interest: 0
+    put_open_interest: 220870
+    exchange_lot_size: 65
+  - underlying: BANKNIFTY
+    expiry: "2026-06-30"
+    strike: "57000"
+    call_settlement: "4458.75"
+    put_settlement: "566.00"
+    call_volume: 0
+    put_volume: 0
+    call_open_interest: 0
+    put_open_interest: 0
+    exchange_lot_size: 30
+  - underlying: BANKNIFTY
+    expiry: "2026-09-29"
+    strike: "57000"
+    call_settlement: "5415.15"
+    put_settlement: "763.60"
+    call_volume: 0
+    put_volume: 0
+    call_open_interest: 0
+    put_open_interest: 0
+    exchange_lot_size: 30
+
+indicative_interpolation:
+  method:
+    pricing_model: BLACK_76
+    day_count: ACT_365
+    discounting: simple_tbill_yield
+    forward_inference: call_put_parity
+    time_interpolation: linear_total_variance
+    strike_interpolation: linear_volatility_with_extrapolation
+  target_expiry: "2026-07-30"
+  target_days: 181
+  interpolated_tbill_yield: "5.677326%"
+  discount_factor: "0.97261759"
+  forwards:
+    NIFTY: "26083.75"
+    BANKNIFTY: "61261.50"
+  implied_volatilities:
+    NIFTY_24000_PUT: "12.9029%"
+    NIFTY_22800_PUT: "14.0299%"
+    BANKNIFTY_56600_PUT: "12.9564%"
+  limitations:
+    - The target expiry was interpolated because 2026-07-30 was not listed.
+    - NIFTY 22800 volatility extrapolates the observed 23000/24000 skew.
+    - BANKNIFTY 56600 uses the nearest listed 57000 strike.
+    - The bracketing BANKNIFTY rows had zero volume and zero open interest.
+    - Some bracketing calls were untraded; their settlement prices are theoretical.
+    - These parameters must not be represented as executable broker quotes.
+
+contract_mismatches:
+  - Candidate NIFTY multiplier is 25; the NSE snapshot reports a lot size of 65.
+  - Candidate BANKNIFTY multiplier is 15; the NSE snapshot reports a lot size of 30.

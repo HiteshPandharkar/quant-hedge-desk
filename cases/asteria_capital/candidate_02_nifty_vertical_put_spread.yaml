@@ -1,0 +1,57 @@
+# Candidate 2: user-editable inputs. Derived feasibility metrics are not inputs.
+candidate_id: asteria-nifty-vertical-put-spread-v1
+schema_version: "1.0"
+family: NIFTY_VERTICAL_PUT_SPREAD
+description: >-
+  Approximately 100% notional NIFTY overlay using a six-month 95%/90%
+  vertical put spread. The short lower-strike put reduces premium but caps
+  gross protection at five percentage points of covered notional.
+
+quote_timestamp: "2026-01-30T15:30:00+05:30"
+estimated_execution_cost: "5000000"
+
+# 2026-01-30 EOD reference level; option premiums remain synthetic scaled proxies.
+initial_levels:
+  NIFTY: "25320.65"
+
+legs:
+  - underlying: NIFTY
+    instrument_type: OPTION
+    direction: LONG
+    option_type: PUT
+    option_style: EUROPEAN
+    strike_or_level: "24000"
+    expiry: "2026-07-30"
+    quantity: 7899
+    contract_multiplier: "25"
+    premium: "686.03"
+    quote_timestamp: "2026-01-30T15:30:00+05:30"
+    liquidity_attributes:
+      normal_daily_volume: 100000
+      source: SYNTHETIC_SCALED_PROXY
+
+  - underlying: NIFTY
+    instrument_type: OPTION
+    direction: SHORT
+    option_type: PUT
+    option_style: EUROPEAN
+    strike_or_level: "22800"
+    expiry: "2026-07-30"
+    quantity: 7899
+    contract_multiplier: "25"
+    premium: "343.31"
+    quote_timestamp: "2026-01-30T15:30:00+05:30"
+    liquidity_attributes:
+      normal_daily_volume: 85000
+      source: SYNTHETIC_SCALED_PROXY
+
+upside_scenario_set_id: asteria-upside-v1
+upside_scenarios:
+  - scenario_id: parallel-up-10
+    portfolio_return: "10%"
+    terminal_levels:
+      NIFTY: "27852.72"
+  - scenario_id: parallel-up-20
+    portfolio_return: "20%"
+    terminal_levels:
+      NIFTY: "30384.78"

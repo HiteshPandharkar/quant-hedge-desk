@@ -1,0 +1,26 @@
+# Fictional existing dealer inventory with ample remaining risk capacity.
+desk_portfolio_id: fictional-desk-capacity-available-v1
+schema_version: "1.0"
+valuation_timestamp: "2026-01-30T15:30:00+05:30"
+market_snapshot_id: pricing-snapshot-2026-01-30
+risk_model_version: fictional-approved-risk-v1
+
+# All measures are signed dealer exposures. Negative crash-stress P&L is a loss.
+positions:
+  - position_id: existing-nifty-collar-book
+    description: Existing client NIFTY collar inventory
+    underlying: NIFTY
+    instrument_type: OPTION
+    net_index_delta_inr: "-25000000"
+    one_month_vega_inr_per_vol_point: "350000"
+    six_month_vega_inr_per_vol_point: "900000"
+    crash_stress_pnl_inr: "8000000"
+
+  - position_id: existing-banknifty-put-book
+    description: Existing BANKNIFTY put inventory
+    underlying: BANKNIFTY
+    instrument_type: OPTION
+    net_index_delta_inr: "10000000"
+    one_month_vega_inr_per_vol_point: "-150000"
+    six_month_vega_inr_per_vol_point: "-300000"
+    crash_stress_pnl_inr: "-3000000"

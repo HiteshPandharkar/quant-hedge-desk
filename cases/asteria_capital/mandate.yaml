@@ -1,0 +1,87 @@
+# Asteria Capital — client hedge mandate
+#
+# This file records what the client wants from the hedge. Percentages are written
+# as people normally read them; the application converts them to exact decimals.
+
+mandate_id: asteria-capital-v1
+schema_version: "1.0"
+
+client:
+  client_name: Asteria Capital
+  client_type: Indian long-only institutional asset manager
+  benchmark: NIFTY 50
+  reporting_currency: INR
+
+  # Protection is assessed at the end of six months. This is a statistical risk
+  # target, not a guaranteed portfolio floor.
+  protection:
+    horizon_months: 6
+    expected_shortfall_confidence: "99%"
+    max_expected_shortfall_loss: "12%"
+    tail_loss_threshold: "10%"
+    tail_breach_reduction_must_be_reported: true
+    assessment_basis: >-
+      Terminal portfolio return under the approved six-month scenario set;
+      interim drawdown is reported separately.
+
+  # Total amount the client may pay, including execution costs.
+  cost:
+    max_all_in_premium_fraction: "2.5%"
+    includes_execution_cost: true
+
+  # The hedge may give up no more than 6 percentage points of portfolio upside.
+  upside:
+    max_sacrifice_percentage_points: "6%"
+    scenario_set_id: asteria-upside-v1
+
+  # Only these listed products may be used for this mandate.
+  eligibility:
+    underlyings:
+      - NIFTY
+      - BANKNIFTY
+    instrument_types:
+      - FUTURE
+      - OPTION
+    option_style: EUROPEAN
+    approved_expiry_months:
+      - 6
+
+  liquidity:
+    max_unwind_trading_days: 3
+    max_market_participation: "10%"  # Share of normal daily traded volume
+
+  rebalancing:
+    style: STATIC_AT_INCEPTION_WITH_RULE_BASED_REBALANCING
+    routine_frequency: WEEKLY
+    exceptional_rebalance_enabled: true
+    trigger_set_id: asteria-risk-exposure-triggers-v1
+
+  # These entries preserve the client's words and document exactly how the desk
+  # has translated them into measurable rules.
+  interpretations:
+    protection:
+      original: Protect losses beyond 10%
+      interpretation: >-
+        Reduce six-month tail loss; this is not a guaranteed hard floor.
+    upside:
+      original: Retain most upside
+      interpretation: >-
+        Surrender no more than 6 percentage points in the defined upside scenarios.
+    maintenance:
+      original: Low maintenance
+      interpretation: Weekly rebalancing plus threshold triggers.
+    liquidity:
+      original: Liquid hedge
+      interpretation: Estimated unwind within three normal trading days.
+    affordability:
+      original: Affordable
+      interpretation: All-in client premium of no more than 2.5%.
+
+  # Ordered from most to least important after every hard rule above has passed.
+  soft_objectives:
+    - RESIDUAL_EXPECTED_SHORTFALL
+    - TAIL_BREACH_PROBABILITY
+    - BASIS_RISK
+    - TURNOVER_AND_COST
+    - CROSS_METHODOLOGY_ROBUSTNESS
+    - SIMPLICITY

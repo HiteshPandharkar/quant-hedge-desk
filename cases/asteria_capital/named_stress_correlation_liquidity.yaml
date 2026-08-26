@@ -1,0 +1,46 @@
+scenario_set_id: asteria-correlation-liquidity-stress-v1
+version: "1.0"
+methodology: NAMED_STRESS
+as_of_date: "2026-01-30"
+horizon_trading_days: 126
+model_version: asteria-named-stress/1.0
+parameters:
+  owner: risk-desk
+  maximum_correlation_basis_gap: "0.05"
+source_snapshot_ids:
+  - asteria-portfolio-2026-01-30
+  - synthetic-option-liquidity-2026-01-30
+scenarios:
+  - scenario_id: correlation-breakdown
+    name: Correlation breakdown
+    description: >-
+      The stock portfolio falls materially more than its NIFTY/BANKNIFTY hedge
+      proxies, exposing sector and stock-specific basis risk.
+    steps:
+      - step_number: 1
+        asset_returns:
+          PORTFOLIO: "-0.20"
+          NIFTY: "-0.12"
+          BANKNIFTY: "-0.15"
+        bid_ask_spread_multipliers:
+          NIFTY: "1"
+          BANKNIFTY: "1"
+        market_volume_multipliers:
+          NIFTY: "1"
+          BANKNIFTY: "1"
+  - scenario_id: stressed-liquidity
+    name: Wider spreads and lower market volume
+    description: >-
+      Executable spreads widen while usable option volume contracts sharply.
+    steps:
+      - step_number: 1
+        asset_returns:
+          PORTFOLIO: "-0.08"
+          NIFTY: "-0.07"
+          BANKNIFTY: "-0.10"
+        bid_ask_spread_multipliers:
+          NIFTY: "4"
+          BANKNIFTY: "5"
+        market_volume_multipliers:
+          NIFTY: "0.15"
+          BANKNIFTY: "0.10"

@@ -1,0 +1,61 @@
+# Candidate inputs are editable by users. Derived feasibility metrics are not.
+candidate_id: asteria-hybrid-protective-puts-v1
+schema_version: "1.0"
+family: HYBRID_NIFTY_BANKNIFTY_PUT_HEDGE
+description: >-
+  Provisional 85% notional overlay: 70% NIFTY and 30% BANKNIFTY,
+  using six-month 5%-out-of-the-money protective puts.
+
+quote_timestamp: "2026-01-30T15:30:00+05:30"
+estimated_execution_cost: "7500000"
+
+# 2026-01-30 EOD reference levels; option premiums remain synthetic scaled proxies.
+initial_levels:
+  NIFTY: "25320.65"
+  BANKNIFTY: "59610.45"
+
+legs:
+  - underlying: NIFTY
+    instrument_type: OPTION
+    direction: LONG
+    option_type: PUT
+    option_style: EUROPEAN
+    strike_or_level: "24000"
+    expiry: "2026-07-30"
+    quantity: 4700
+    contract_multiplier: "25"
+    premium: "686.03"
+    quote_timestamp: "2026-01-30T15:30:00+05:30"
+    liquidity_attributes:
+      normal_daily_volume: 100000
+      source: SYNTHETIC_SCALED_PROXY
+
+  - underlying: BANKNIFTY
+    instrument_type: OPTION
+    direction: LONG
+    option_type: PUT
+    option_style: EUROPEAN
+    strike_or_level: "56600"
+    expiry: "2026-07-30"
+    quantity: 1426
+    contract_multiplier: "15"
+    premium: "1699.49"
+    quote_timestamp: "2026-01-30T15:30:00+05:30"
+    liquidity_attributes:
+      normal_daily_volume: 60000
+      source: SYNTHETIC_SCALED_PROXY
+
+# The mandate names an upside scenario set that is not otherwise populated yet.
+# These transparent scenarios make the current upside test reproducible.
+upside_scenario_set_id: asteria-upside-v1
+upside_scenarios:
+  - scenario_id: parallel-up-10
+    portfolio_return: "10%"
+    terminal_levels:
+      NIFTY: "27852.72"
+      BANKNIFTY: "65571.50"
+  - scenario_id: parallel-up-20
+    portfolio_return: "20%"
+    terminal_levels:
+      NIFTY: "30384.78"
+      BANKNIFTY: "71532.54"

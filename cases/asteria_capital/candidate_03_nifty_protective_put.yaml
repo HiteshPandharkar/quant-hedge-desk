@@ -1,0 +1,42 @@
+# Candidate 3: user-editable inputs. Derived feasibility metrics are not inputs.
+candidate_id: asteria-nifty-protective-put-v1
+schema_version: "1.0"
+family: NIFTY_PROTECTIVE_PUT
+description: >-
+  Approximately 85% notional NIFTY overlay using a six-month 5%-out-of-the-money
+  protective put. Coverage is reduced from 100% to keep the synthetic all-in
+  cost below the mandate's 2.5% limit.
+
+quote_timestamp: "2026-01-30T15:30:00+05:30"
+estimated_execution_cost: "5000000"
+
+# 2026-01-30 EOD reference level; option premium remains a synthetic scaled proxy.
+initial_levels:
+  NIFTY: "25320.65"
+
+legs:
+  - underlying: NIFTY
+    instrument_type: OPTION
+    direction: LONG
+    option_type: PUT
+    option_style: EUROPEAN
+    strike_or_level: "24000"
+    expiry: "2026-07-30"
+    quantity: 6714
+    contract_multiplier: "25"
+    premium: "686.03"
+    quote_timestamp: "2026-01-30T15:30:00+05:30"
+    liquidity_attributes:
+      normal_daily_volume: 100000
+      source: SYNTHETIC_SCALED_PROXY
+
+upside_scenario_set_id: asteria-upside-v1
+upside_scenarios:
+  - scenario_id: parallel-up-10
+    portfolio_return: "10%"
+    terminal_levels:
+      NIFTY: "27852.72"
+  - scenario_id: parallel-up-20
+    portfolio_return: "20%"
+    terminal_levels:
+      NIFTY: "30384.78"

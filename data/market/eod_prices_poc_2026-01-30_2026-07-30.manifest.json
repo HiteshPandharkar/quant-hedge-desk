@@ -1,0 +1,325 @@
+{
+  "dataset": "eod_prices_poc_2026-01-30_2026-07-30.csv",
+  "source": "Yahoo Finance via yfinance",
+  "yfinance_version": "1.6.0",
+  "downloaded_at_utc": "2026-08-24T06:50:54.712953+00:00",
+  "requested_start": "2026-01-30",
+  "requested_end_inclusive": "2026-07-30",
+  "price_field_for_returns": "adjusted_close",
+  "symbol_count": 52,
+  "row_count": 6492,
+  "coverage": {
+    "HDFCBANK": {
+      "yahoo_ticker": "HDFCBANK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ICICIBANK": {
+      "yahoo_ticker": "ICICIBANK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "RELIANCE": {
+      "yahoo_ticker": "RELIANCE.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "LT": {
+      "yahoo_ticker": "LT.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "AXISBANK": {
+      "yahoo_ticker": "AXISBANK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "KOTAKBANK": {
+      "yahoo_ticker": "KOTAKBANK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "SBIN": {
+      "yahoo_ticker": "SBIN.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BAJFINANCE": {
+      "yahoo_ticker": "BAJFINANCE.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "INFY": {
+      "yahoo_ticker": "INFY.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "TCS": {
+      "yahoo_ticker": "TCS.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BHARTIARTL": {
+      "yahoo_ticker": "BHARTIARTL.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "M&M": {
+      "yahoo_ticker": "M&M.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "SUNPHARMA": {
+      "yahoo_ticker": "SUNPHARMA.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ULTRACEMCO": {
+      "yahoo_ticker": "ULTRACEMCO.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "SIEMENS": {
+      "yahoo_ticker": "SIEMENS.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "INDUSINDBK": {
+      "yahoo_ticker": "INDUSINDBK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "FEDERALBNK": {
+      "yahoo_ticker": "FEDERALBNK.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "IDFCFIRSTB": {
+      "yahoo_ticker": "IDFCFIRSTB.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BANKBARODA": {
+      "yahoo_ticker": "BANKBARODA.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ABB": {
+      "yahoo_ticker": "ABB.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "CUMMINSIND": {
+      "yahoo_ticker": "CUMMINSIND.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BEL": {
+      "yahoo_ticker": "BEL.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "HAL": {
+      "yahoo_ticker": "HAL.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "TATAMOTORS": {
+      "yahoo_ticker": "TMPV.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "MARUTI": {
+      "yahoo_ticker": "MARUTI.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "CIPLA": {
+      "yahoo_ticker": "CIPLA.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "DRREDDY": {
+      "yahoo_ticker": "DRREDDY.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "TITAN": {
+      "yahoo_ticker": "TITAN.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ASIANPAINT": {
+      "yahoo_ticker": "ASIANPAINT.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "HINDUNILVR": {
+      "yahoo_ticker": "HINDUNILVR.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "PERSISTENT": {
+      "yahoo_ticker": "PERSISTENT.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "COFORGE": {
+      "yahoo_ticker": "COFORGE.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "KPITTECH": {
+      "yahoo_ticker": "KPITTECH.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "DIXON": {
+      "yahoo_ticker": "DIXON.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "TRENT": {
+      "yahoo_ticker": "TRENT.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "POLYCAB": {
+      "yahoo_ticker": "POLYCAB.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ASTRAL": {
+      "yahoo_ticker": "ASTRAL.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "CROMPTON": {
+      "yahoo_ticker": "CROMPTON.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "VOLTAS": {
+      "yahoo_ticker": "VOLTAS.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "ESCORTS": {
+      "yahoo_ticker": "ESCORTS.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BALKRISIND": {
+      "yahoo_ticker": "BALKRISIND.NS",
+      "row_count": 124,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "PIIND": {
+      "yahoo_ticker": "PIIND.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "DEEPAKNTR": {
+      "yahoo_ticker": "DEEPAKNTR.NS",
+      "row_count": 124,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "MAXHEALTH": {
+      "yahoo_ticker": "MAXHEALTH.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "APOLLOHOSP": {
+      "yahoo_ticker": "APOLLOHOSP.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "KAYNES": {
+      "yahoo_ticker": "KAYNES.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "KEI": {
+      "yahoo_ticker": "KEI.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "SUPREMEIND": {
+      "yahoo_ticker": "SUPREMEIND.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "APLAPOLLO": {
+      "yahoo_ticker": "APLAPOLLO.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "LALPATHLAB": {
+      "yahoo_ticker": "LALPATHLAB.NS",
+      "row_count": 125,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "NIFTY": {
+      "yahoo_ticker": "^NSEI",
+      "row_count": 122,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    },
+    "BANKNIFTY": {
+      "yahoo_ticker": "^NSEBANK",
+      "row_count": 122,
+      "first_date": "2026-01-30",
+      "last_date": "2026-07-30"
+    }
+  }
+}
