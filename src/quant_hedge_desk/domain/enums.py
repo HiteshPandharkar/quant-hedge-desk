@@ -35,6 +35,21 @@ class RebalanceFrequency(StrEnum):
     WEEKLY = "WEEKLY"
 
 
+class RebalancingPricingMode(StrEnum):
+    """Supported sources for pricing resize trades during a stress path."""
+
+    EXPLICIT_MARKS = "EXPLICIT_MARKS"
+    BLACK_76 = "BLACK_76"
+
+
+class RebalanceTriggerType(StrEnum):
+    """Reason a resize was required at a scenario step."""
+
+    ROUTINE = "ROUTINE"
+    EXCEPTIONAL = "EXCEPTIONAL"
+    PENDING = "PENDING"
+
+
 class SoftObjective(StrEnum):
     RESIDUAL_EXPECTED_SHORTFALL = "RESIDUAL_EXPECTED_SHORTFALL"
     TAIL_BREACH_PROBABILITY = "TAIL_BREACH_PROBABILITY"
@@ -87,6 +102,8 @@ __all__ = [
     "OptionType",
     "PreTradeDecision",
     "RebalanceFrequency",
+    "RebalancingPricingMode",
+    "RebalanceTriggerType",
     "RiskLimitStatus",
     "ScenarioMethodology",
     "SoftObjective",

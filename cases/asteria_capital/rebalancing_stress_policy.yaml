@@ -1,0 +1,10 @@
+policy_id: asteria-rebalancing-stress-v1
+version: "1.0"
+exceptional_coverage_drift_threshold: "0.05"
+routine_interval_trading_days: 5
+pricing_mode: BLACK_76
+base_volatilities:
+  "NIFTY|2026-07-30|PUT|24000": "0.129029"
+  "NIFTY|2026-07-30|PUT|22800": "0.140299"
+  "BANKNIFTY|2026-07-30|PUT|56600": "0.129564"
+rebalancing_failure_is_release_gate: true

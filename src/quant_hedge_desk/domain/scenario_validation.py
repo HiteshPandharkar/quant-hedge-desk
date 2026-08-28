@@ -60,6 +60,7 @@ def numeric_mapping(
     path: str,
     *,
     minimum: Decimal | None = None,
+    maximum: Decimal | None = None,
     strictly_positive: bool = False,
 ) -> Mapping[str, Decimal]:
     if not isinstance(value, Mapping):
@@ -74,6 +75,8 @@ def numeric_mapping(
         number = decimal_number(raw_value, f"{path}.{name}")
         if minimum is not None and number < minimum:
             raise ScenarioValidationError(f"{path}.{name} must be at least {minimum}")
+        if maximum is not None and number > maximum:
+            raise ScenarioValidationError(f"{path}.{name} must be at most {maximum}")
         if strictly_positive and number <= 0:
             raise ScenarioValidationError(f"{path}.{name} must be positive")
         normalized[name] = number

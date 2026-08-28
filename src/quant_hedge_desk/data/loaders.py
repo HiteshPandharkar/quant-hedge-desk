@@ -22,6 +22,7 @@ from quant_hedge_desk.domain.models.portfolio import (
     PortfolioHolding,
     PortfolioValidationError,
 )
+from quant_hedge_desk.domain.models.rebalancing import RebalancingStressPolicy
 
 
 class DataLoadError(ValueError):
@@ -54,6 +55,12 @@ def load_yaml_mapping(path: str | Path) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
         raise DataLoadError(f"YAML configuration {source} must contain a mapping at its root")
     return value
+
+
+def load_rebalancing_stress_policy(path: str | Path) -> RebalancingStressPolicy:
+    """Load and strictly validate a versioned rebalancing-stress policy."""
+
+    return RebalancingStressPolicy.from_mapping(load_yaml_mapping(path))
 
 
 def _iso_date(value: date | str, name: str) -> date:
@@ -336,5 +343,6 @@ __all__ = [
     "PortfolioCSVWarning",
     "load_portfolio_csv",
     "load_portfolio_csv_with_report",
+    "load_rebalancing_stress_policy",
     "load_yaml_mapping",
 ]

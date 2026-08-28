@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from quant_hedge_desk.domain.enums import ScenarioMethodology  # noqa: E402
 from quant_hedge_desk.domain.errors import ScenarioValidationError  # noqa: E402
 from quant_hedge_desk.domain.models.scenario_contracts import (  # noqa: E402
+    OptionMark,
     ScenarioPath,
     ScenarioSet,
     ScenarioStep,
@@ -143,6 +144,63 @@ class ScenarioContractTests(unittest.TestCase):
                 {"NIFTY": 0},
                 bid_ask_spread_multipliers={"NIFTY": 0},
             )
+
+    def test_step_accepts_structured_rebalancing_market_state(self) -> None:
+        step = ScenarioStep.from_mapping(
+            {
+                "step_number": 1,
+                "observation_date": "2026-02-06",
+                "asset_returns": {"NIFTY": "-0.02"},
+                "option_marks": [
+                    {
+                        "underlying": "nifty",
+                        "expiry": "2026-07-30",
+                        "strike": "24000.0",
+                        "option_type": "put",
+                        "mark": "710.25",
+                    }
+                ],
+                "forward_levels": {"nifty": "25800"},
+                "risk_free_rate": "0.057",
+                "implied_volatility_shifts": {"nifty": "0.02"},
+            }
+        )
+
+        self.assertEqual(
+            step.option_marks[0].contract_id,
+            "NIFTY|2026-07-30|PUT|24000",
+        )
+        self.assertEqual(step.forward_levels["NIFTY"], Decimal("25800"))
+        self.assertEqual(step.risk_free_rate, Decimal("0.057"))
+        self.assertEqual(
+            OptionMark.from_mapping(step.option_marks[0].to_dict()),
+            step.option_marks[0],
+        )
+
+    def test_step_rejects_invalid_rebalancing_market_state_with_context(self) -> None:
+        cases = (
+            ({"forward_levels": {"NIFTY": "0"}}, "forward_levels.NIFTY"),
+            ({"risk_free_rate": "1.01"}, "risk_free_rate"),
+            ({"implied_volatility_shifts": {"NIFTY": "-1.01"}}, "implied_volatility_shifts.NIFTY"),
+            (
+                {
+                    "option_marks": [
+                        {
+                            "underlying": "NIFTY",
+                            "expiry": "2026-07-30",
+                            "strike": "24000",
+                            "option_type": "PUT",
+                            "mark": "-1",
+                        }
+                    ]
+                },
+                "option_mark.mark",
+            ),
+        )
+        for additions, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ScenarioValidationError, message):
+                    ScenarioStep(1, {"NIFTY": "0"}, **additions)
 
     def test_generator_protocol_is_runtime_checkable(self) -> None:
         class Generator:

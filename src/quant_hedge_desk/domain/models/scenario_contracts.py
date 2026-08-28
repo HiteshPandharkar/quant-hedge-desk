@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import Any, Mapping
@@ -15,8 +15,9 @@ from quant_hedge_desk.domain.constants import (
     MINIMUM_SIMPLE_RETURN,
     TOTAL_SCENARIO_PROBABILITY,
 )
-from quant_hedge_desk.domain.enums import ScenarioMethodology
+from quant_hedge_desk.domain.enums import OptionType, ScenarioMethodology, Underlying
 from quant_hedge_desk.domain.errors import ScenarioValidationError
+from quant_hedge_desk.domain.option_contracts import option_contract_id
 from quant_hedge_desk.domain.scenario_validation import (
     check_keys,
     decimal_number,
@@ -26,9 +27,63 @@ from quant_hedge_desk.domain.scenario_validation import (
     scenario_date,
     scenario_methodology,
 )
+from quant_hedge_desk.serialization import json_ready
 
 
 ScenarioParameter = str | int | float | Decimal | bool
+
+
+@dataclass(frozen=True, slots=True)
+class OptionMark:
+    """An explicit mid/reference mark identified by immutable option terms."""
+
+    underlying: Underlying
+    expiry: date
+    strike: Decimal
+    option_type: OptionType
+    mark: Decimal
+
+    def __post_init__(self) -> None:
+        try:
+            underlying = Underlying(required_text(self.underlying, "option_mark.underlying").upper())
+        except ValueError as exc:
+            raise ScenarioValidationError("option_mark.underlying is unsupported") from exc
+        object.__setattr__(self, "underlying", underlying)
+        object.__setattr__(self, "expiry", scenario_date(self.expiry, "option_mark.expiry"))
+        strike = decimal_number(self.strike, "option_mark.strike")
+        if strike <= 0:
+            raise ScenarioValidationError("option_mark.strike must be positive")
+        object.__setattr__(self, "strike", strike)
+        try:
+            option_type = OptionType(required_text(self.option_type, "option_mark.option_type").upper())
+        except ValueError as exc:
+            raise ScenarioValidationError("option_mark.option_type must be CALL or PUT") from exc
+        object.__setattr__(self, "option_type", option_type)
+        mark = decimal_number(self.mark, "option_mark.mark")
+        if mark < 0:
+            raise ScenarioValidationError("option_mark.mark must be non-negative")
+        object.__setattr__(self, "mark", mark)
+
+    @property
+    def contract_id(self) -> str:
+        return option_contract_id(
+            self.underlying, self.expiry, self.option_type, self.strike
+        )
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> OptionMark:
+        if not isinstance(value, Mapping):
+            raise ScenarioValidationError("option_mark must be a mapping")
+        check_keys(
+            value,
+            {"underlying", "expiry", "strike", "option_type", "mark"},
+            set(),
+            "option_mark",
+        )
+        return cls(**value)
+
+    def to_dict(self) -> dict[str, Any]:
+        return json_ready(asdict(self))
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,6 +97,9 @@ class ScenarioStep:
     rebalancing_allowed: bool = True
     observation_date: date | None = None
     market_volume_multipliers: Mapping[str, Decimal] = field(default_factory=dict)
+    option_marks: tuple[OptionMark, ...] = ()
+    forward_levels: Mapping[str, Decimal] = field(default_factory=dict)
+    risk_free_rate: Decimal | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -60,7 +118,10 @@ class ScenarioStep:
             self,
             "implied_volatility_shifts",
             numeric_mapping(
-                self.implied_volatility_shifts, "implied_volatility_shifts"
+                self.implied_volatility_shifts,
+                "implied_volatility_shifts",
+                minimum=Decimal("-1"),
+                maximum=Decimal("1"),
             ),
         )
         object.__setattr__(
@@ -89,6 +150,30 @@ class ScenarioStep:
                 "observation_date",
                 scenario_date(self.observation_date, "observation_date"),
             )
+        if isinstance(self.option_marks, (str, bytes)):
+            raise ScenarioValidationError("option_marks must be a sequence")
+        try:
+            raw_marks = tuple(self.option_marks)
+        except TypeError as exc:
+            raise ScenarioValidationError("option_marks must be a sequence") from exc
+        marks = tuple(
+            item if isinstance(item, OptionMark) else OptionMark.from_mapping(item)
+            for item in raw_marks
+        )
+        contract_ids = [item.contract_id for item in marks]
+        if len(contract_ids) != len(set(contract_ids)):
+            raise ScenarioValidationError("option_marks must contain unique contracts")
+        object.__setattr__(self, "option_marks", marks)
+        object.__setattr__(
+            self,
+            "forward_levels",
+            numeric_mapping(self.forward_levels, "forward_levels", strictly_positive=True),
+        )
+        if self.risk_free_rate is not None:
+            rate = decimal_number(self.risk_free_rate, "risk_free_rate")
+            if rate < -1 or rate > 1:
+                raise ScenarioValidationError("risk_free_rate must be in [-1, 1]")
+            object.__setattr__(self, "risk_free_rate", rate)
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> ScenarioStep:
@@ -103,6 +188,9 @@ class ScenarioStep:
                 "market_volume_multipliers",
                 "rebalancing_allowed",
                 "observation_date",
+                "option_marks",
+                "forward_levels",
+                "risk_free_rate",
             },
             "scenario_step",
         )
@@ -116,6 +204,9 @@ class ScenarioStep:
             market_volume_multipliers=value.get("market_volume_multipliers", {}),
             rebalancing_allowed=value.get("rebalancing_allowed", True),
             observation_date=value.get("observation_date"),
+            option_marks=tuple(value.get("option_marks", ())),
+            forward_levels=value.get("forward_levels", {}),
+            risk_free_rate=value.get("risk_free_rate"),
         )
 
 
@@ -354,4 +445,5 @@ __all__ = [
     "ScenarioPath",
     "ScenarioSet",
     "ScenarioStep",
+    "OptionMark",
 ]

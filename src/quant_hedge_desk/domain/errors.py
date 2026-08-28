@@ -5,6 +5,14 @@ class ScenarioValidationError(ValueError):
     """Raised when a scenario contract is incomplete or inconsistent."""
 
 
+class RebalancingValidationError(ValueError):
+    """Raised when a rebalancing policy or state contract is invalid."""
+
+
+class RebalancePricingError(ValueError):
+    """Raised when a scenario step cannot price a requested rebalance."""
+
+
 class InstrumentValidationError(ValueError):
     """Raised when a derivative leg is incomplete or inconsistent."""
 
@@ -26,5 +34,7 @@ __all__ = [
     "DealerRiskValidationError",
     "HedgeCandidateValidationError",
     "InstrumentValidationError",
+    "RebalancePricingError",
+    "RebalancingValidationError",
     "ScenarioValidationError",
 ]
