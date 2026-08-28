@@ -126,7 +126,10 @@ The `cases/asteria_capital` directory contains:
 | `mandate.yaml` | Client eligibility, protection, cost, upside, and liquidity rules |
 | `candidate_*.yaml` | Hybrid puts, a NIFTY vertical put spread, and a protective put |
 | `instrument_quotes.csv` | Reproducible executable and fallback quote inputs |
-| `named_stress_correlation_liquidity.yaml` | Versioned stress scenarios and liquidity shocks |
+| `named_stress_correlation_liquidity.yaml` | Versioned static stress scenarios and liquidity shocks |
+| `rebalancing_stress_delayed_black76.yaml` | Multi-step delayed-rebalancing release case |
+| `rebalancing_stress_explicit_marks.yaml` | Deterministic explicit-mark comparison fixture |
+| `rebalancing_stress*_policy.yaml` | Black-76 release and explicit-mark test policies |
 | `desk_limits.yaml` | Dealer hard limits and warning thresholds |
 | `desk_portfolio_capacity_*.yaml` | Available- and constrained-capacity inventory snapshots |
 
@@ -238,7 +241,7 @@ or partial fill only when the resulting position and cumulative costs pass all
 existing hard constraints; pricing, capacity, or feasibility rejection returns
 the original position and ledger unchanged.
 
-The Sprint 4 sequential engine applies each path step before considering a
+The sequential engine applies each path step before considering a
 resize, maintains an immutable position and cumulative cash ledger, and carries
 blocked requests forward with current-state target and price recalculation.
 Completed-late, partial, pricing-rejected, feasibility-rejected, and unresolved
@@ -251,8 +254,52 @@ rebalanced hedged return.
 `rebalancing_policy_path` and `market_data_path` are supplied. Historical data
 is used only for the mandate feasibility check on proposed fills. Omitting both
 arguments preserves the original static behavior. A policy can make failures a
-release gate or retain them as diagnostic-only restrictions. The public batch
-facade remains the Sprint 5 roadmap increment.
+release gate or retain them as diagnostic-only restrictions.
+
+Run every Asteria candidate against the shared delayed-rebalancing release case
+with one batch call:
+
+```python
+from pathlib import Path
+
+from quant_hedge_desk.application.stress_candidate_hedges import (
+    stress_candidate_hedges,
+)
+
+case = Path("cases/asteria_capital")
+result = stress_candidate_hedges(
+    portfolio_path=case / "portfolio.csv",
+    mandate_path=case / "mandate.yaml",
+    candidate_paths=sorted(case.glob("candidate_*.yaml")),
+    stress_scenario_path=case / "rebalancing_stress_delayed_black76.yaml",
+    rebalancing_policy_path=case / "rebalancing_stress_policy.yaml",
+    market_data_path="data/market/eod_prices.csv",
+    supplied_total_market_value=5_000_000_000,
+)
+
+print(result.releasable_candidate_ids)
+print(result.rejected_candidate_ids)
+```
+
+The batch result identifies the scenario-set and policy versions, retains one
+complete evaluation per candidate in input order, and partitions candidate IDs
+into releasable and rejected groups. Malformed shared inputs, malformed
+candidates, and duplicate candidate IDs abort the call. Valid candidates that
+fail static or required-rebalancing gates remain inspectable structured results;
+their outcome events and `usage_restrictions` explain the rejection.
+
+Calculation lineage is: checked-in portfolio and mandate -> aligned historical
+returns for fill feasibility -> versioned scenario path and pricing policy ->
+candidate-local position/cash-ledger transitions -> static and rebalanced
+terminal returns -> release classification. `to_dict()` produces JSON-ready
+values while preserving candidate, portfolio, scenario-set, policy, scenario,
+step, and option-contract identifiers needed to reproduce a run.
+
+Rebalancing V1 only resizes the candidate's existing contracts. It does not
+roll expiries, change strikes, introduce instruments, or optimize structures.
+Explicit marks are reference mids; Black-76 is a policy-driven analytical mark,
+and spread costs are modeled separately. A delayed rebalance is a failure even
+when it later fills, and the checked-in release policy gates that failure.
 
 ## Refresh market data
 

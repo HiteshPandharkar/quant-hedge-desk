@@ -1,0 +1,57 @@
+scenario_set_id: asteria-delayed-rebalancing-explicit-marks-v1
+version: "1.0"
+methodology: NAMED_STRESS
+as_of_date: "2026-01-30"
+horizon_trading_days: 3
+model_version: asteria-delayed-rebalancing/1.0
+parameters:
+  owner: risk-desk
+  maximum_correlation_basis_gap: "0.05"
+source_snapshot_ids:
+  - asteria-portfolio-2026-01-30
+  - synthetic-explicit-option-marks-2026-02-03
+scenarios:
+  - scenario_id: delayed-exceptional-rebalance-explicit-marks
+    name: Delayed exceptional resize with explicit option marks
+    steps:
+      - step_number: 1
+        observation_date: "2026-02-02"
+        asset_returns:
+          PORTFOLIO: "-0.08"
+          NIFTY: "-0.01"
+          BANKNIFTY: "-0.02"
+        rebalancing_allowed: false
+      - step_number: 2
+        observation_date: "2026-02-03"
+        asset_returns:
+          PORTFOLIO: "-0.02"
+          NIFTY: "-0.01"
+          BANKNIFTY: "-0.015"
+        bid_ask_spread_multipliers:
+          NIFTY: "1.5"
+          BANKNIFTY: "1.75"
+        market_volume_multipliers:
+          NIFTY: "0.75"
+          BANKNIFTY: "0.70"
+        option_marks:
+          - underlying: NIFTY
+            expiry: "2026-07-30"
+            strike: "24000"
+            option_type: PUT
+            mark: "790.00"
+          - underlying: NIFTY
+            expiry: "2026-07-30"
+            strike: "22800"
+            option_type: PUT
+            mark: "410.00"
+          - underlying: BANKNIFTY
+            expiry: "2026-07-30"
+            strike: "56600"
+            option_type: PUT
+            mark: "1950.00"
+      - step_number: 3
+        observation_date: "2026-02-04"
+        asset_returns:
+          PORTFOLIO: "-0.05"
+          NIFTY: "-0.04"
+          BANKNIFTY: "-0.06"

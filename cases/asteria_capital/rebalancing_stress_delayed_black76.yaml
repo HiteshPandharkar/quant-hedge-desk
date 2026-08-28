@@ -1,0 +1,64 @@
+scenario_set_id: asteria-delayed-rebalancing-black76-v1
+version: "1.0"
+methodology: NAMED_STRESS
+as_of_date: "2026-01-30"
+horizon_trading_days: 3
+model_version: asteria-delayed-rebalancing/1.0
+parameters:
+  owner: risk-desk
+  maximum_correlation_basis_gap: "0.05"
+source_snapshot_ids:
+  - asteria-portfolio-2026-01-30
+  - synthetic-black76-state-2026-02-02
+scenarios:
+  - scenario_id: delayed-exceptional-rebalance
+    name: Delayed exceptional resize under stressed liquidity
+    description: >-
+      Portfolio losses create exceptional coverage drift while trading is
+      blocked for one scenario trading day. The pending target is repriced and
+      resized when trading resumes under wider spreads and lower volume.
+    steps:
+      - step_number: 1
+        observation_date: "2026-02-02"
+        asset_returns:
+          PORTFOLIO: "-0.08"
+          NIFTY: "-0.01"
+          BANKNIFTY: "-0.02"
+        rebalancing_allowed: false
+        bid_ask_spread_multipliers:
+          NIFTY: "2.0"
+          BANKNIFTY: "2.5"
+        market_volume_multipliers:
+          NIFTY: "0.50"
+          BANKNIFTY: "0.40"
+      - step_number: 2
+        observation_date: "2026-02-03"
+        asset_returns:
+          PORTFOLIO: "-0.02"
+          NIFTY: "-0.01"
+          BANKNIFTY: "-0.015"
+        implied_volatility_shifts:
+          NIFTY: "0.04"
+          BANKNIFTY: "0.05"
+        bid_ask_spread_multipliers:
+          NIFTY: "3.0"
+          BANKNIFTY: "3.5"
+        market_volume_multipliers:
+          NIFTY: "0.35"
+          BANKNIFTY: "0.30"
+        forward_levels:
+          NIFTY: "24816.77"
+          BANKNIFTY: "57541.39"
+        risk_free_rate: "0.055"
+      - step_number: 3
+        observation_date: "2026-02-04"
+        asset_returns:
+          PORTFOLIO: "-0.05"
+          NIFTY: "-0.04"
+          BANKNIFTY: "-0.06"
+        bid_ask_spread_multipliers:
+          NIFTY: "2.5"
+          BANKNIFTY: "3.0"
+        market_volume_multipliers:
+          NIFTY: "0.40"
+          BANKNIFTY: "0.35"

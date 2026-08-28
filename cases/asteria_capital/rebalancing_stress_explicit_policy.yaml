@@ -1,0 +1,7 @@
+policy_id: asteria-rebalancing-explicit-marks-v1
+version: "1.0"
+exceptional_coverage_drift_threshold: "0.05"
+routine_interval_trading_days: 5
+pricing_mode: EXPLICIT_MARKS
+base_volatilities: {}
+rebalancing_failure_is_release_gate: true
