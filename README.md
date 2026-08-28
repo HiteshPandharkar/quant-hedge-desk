@@ -205,6 +205,29 @@ See:
 - `methodology/historical_rolling_scenarios.md`
 - `methodology/factor_simulation_scenarios.md`
 
+## Rebalancing stress contracts
+
+The first rebalancing-stress increment adds strict, immutable interfaces without
+changing existing static stress behavior. Scenario steps may optionally include
+dated option marks, forward levels, a risk-free rate, and additive volatility
+shifts. Existing scenario YAML needs no migration.
+
+`load_rebalancing_stress_policy(...)` loads a versioned policy for either
+`EXPLICIT_MARKS` or `BLACK_76` pricing. The checked-in Asteria policy uses a 5%
+exceptional coverage-drift threshold, a five-trading-day routine interval,
+contract-level indicative volatilities, and release gating for failed required
+rebalances.
+
+The Sprint 2 proposal layer is available in
+`quant_hedge_desk.hedge_design.rebalancing`. It resolves explicit marks by
+canonical contract identity or calculates Black-76 marks from dated scenario
+state using an actual-calendar-days/365 year fraction. Targets preserve
+inception per-underlying coverage and whole-structure
+leg ratios, using decimal half-up contract rounding. `propose_rebalance(...)`
+returns an immutable, JSON-ready request for routine or exceptional triggers;
+missing pricing inputs produce a rejected request, while terminal steps and
+rounded no-ops produce no request.
+
 ## Refresh market data
 
 The checked-in dataset is sufficient for the tests and examples. To explicitly
