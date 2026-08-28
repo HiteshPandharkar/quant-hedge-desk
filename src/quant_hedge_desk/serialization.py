@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import fields, is_dataclass
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
@@ -17,6 +18,10 @@ def json_ready(value: Any) -> Any:
         return value.isoformat()
     if isinstance(value, StrEnum):
         return value.value
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            item.name: json_ready(getattr(value, item.name)) for item in fields(value)
+        }
     if isinstance(value, Mapping):
         return {str(key): json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):

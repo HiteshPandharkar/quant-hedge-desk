@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -489,7 +489,7 @@ class CandidateStressBatchResult:
             )
 
     def to_dict(self) -> dict[str, Any]:
-        return json_ready(asdict(self))
+        return json_ready(self)
 
 
 BatchStressResult = CandidateStressBatchResult

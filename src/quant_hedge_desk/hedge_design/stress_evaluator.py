@@ -2,17 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 from quant_hedge_desk.domain.enums import LegDirection, OptionType
 from quant_hedge_desk.domain.models.derivative_legs import FutureLeg, VanillaOptionLeg
 from quant_hedge_desk.domain.models.mandate import Mandate
 from quant_hedge_desk.domain.models.portfolio import Portfolio
+from quant_hedge_desk.domain.models.rebalancing import (
+    CashLedger,
+    PositionState,
+    RebalanceEvent,
+    RebalancingStressPolicy,
+)
 from quant_hedge_desk.domain.models.scenario_contracts import ScenarioPath, ScenarioSet
 from quant_hedge_desk.hedge_design.candidate_generator import HedgeCandidate
 from quant_hedge_desk.hedge_design.scenario_evaluator import evaluate_scenario_outcomes
+from quant_hedge_desk.hedge_design.rebalancing_stress import evaluate_rebalancing_path
 from quant_hedge_desk.serialization import json_ready
 
 
@@ -37,6 +44,19 @@ class CandidateStressOutcome:
     stressed_hedged_return: Decimal
     return_improvement: Decimal
     passed: bool
+    static_pass: bool | None = None
+    rebalancing_pass: bool | None = None
+    rebalanced_terminal_payoff: Decimal | None = None
+    rebalanced_hedge_profit: Decimal | None = None
+    rebalanced_hedged_return: Decimal | None = None
+    cumulative_rebalance_cost: Decimal | None = None
+    rebalanced_premium_cash_flow: Decimal | None = None
+    rebalance_turnover: Decimal | None = None
+    maximum_rebalance_delay_trading_days: int | None = None
+    final_position: PositionState | None = None
+    cash_ledger: CashLedger | None = None
+    rebalance_events: tuple[RebalanceEvent, ...] = ()
+    rebalancing_failure_reasons: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,9 +69,40 @@ class CandidateStressEvaluation:
     outcomes: tuple[CandidateStressOutcome, ...]
     passed: bool
     usage_restrictions: tuple[str, ...]
+    rebalancing_policy_id: str | None = None
+    rebalancing_policy_version: str | None = None
+    rebalancing_failure_is_release_gate: bool | None = None
+    rebalancing_pass: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return json_ready(asdict(self))
+        payload = json_ready(self)
+        if self.rebalancing_policy_id is None:
+            for name in (
+                "rebalancing_policy_id",
+                "rebalancing_policy_version",
+                "rebalancing_failure_is_release_gate",
+                "rebalancing_pass",
+            ):
+                payload.pop(name)
+            rebalancing_fields = {
+                "static_pass",
+                "rebalancing_pass",
+                "rebalanced_terminal_payoff",
+                "rebalanced_hedge_profit",
+                "rebalanced_hedged_return",
+                "cumulative_rebalance_cost",
+                "rebalanced_premium_cash_flow",
+                "rebalance_turnover",
+                "maximum_rebalance_delay_trading_days",
+                "final_position",
+                "cash_ledger",
+                "rebalance_events",
+                "rebalancing_failure_reasons",
+            }
+            for outcome in payload["outcomes"]:
+                for name in rebalancing_fields:
+                    outcome.pop(name)
+        return payload
 
 
 def _decimal(value: object) -> Decimal | None:
@@ -108,6 +159,9 @@ def evaluate_candidate_stresses(
     candidate: HedgeCandidate,
     mandate: Mandate,
     maximum_correlation_basis_gap: Decimal | str = Decimal("0.05"),
+    rebalancing_policy: RebalancingStressPolicy | None = None,
+    portfolio_horizon_returns: Sequence[float] | None = None,
+    underlying_horizon_returns: Mapping[str, Sequence[float]] | None = None,
 ) -> CandidateStressEvaluation:
     """Stress basis dislocation, bid-ask cost and executable unwind capacity.
 
@@ -120,6 +174,13 @@ def evaluate_candidate_stresses(
 
     if not isinstance(mandate, Mandate):
         raise TypeError("mandate must be a Mandate")
+    if rebalancing_policy is not None:
+        if not isinstance(rebalancing_policy, RebalancingStressPolicy):
+            raise TypeError("rebalancing_policy must be a RebalancingStressPolicy")
+        if portfolio_horizon_returns is None or underlying_horizon_returns is None:
+            raise ValueError(
+                "historical horizon returns are required for rebalancing feasibility"
+            )
     threshold = _decimal(maximum_correlation_basis_gap)
     if threshold is None or threshold < 0 or threshold > 1:
         raise ValueError("maximum_correlation_basis_gap must be in [0, 1]")
@@ -195,7 +256,28 @@ def evaluate_candidate_stresses(
         stressed_hedged_return = (
             valued.hedged_return - incremental_cost / portfolio.total_market_value
         )
-        passed = correlation_pass and liquidity_pass and cost_pass
+        static_pass = correlation_pass and liquidity_pass and cost_pass
+        rebalanced = None
+        if rebalancing_policy is not None:
+            assert portfolio_horizon_returns is not None
+            assert underlying_horizon_returns is not None
+            rebalanced = evaluate_rebalancing_path(
+                scenario=scenario,
+                portfolio=portfolio,
+                candidate=candidate,
+                mandate=mandate,
+                policy=rebalancing_policy,
+                portfolio_horizon_returns=portfolio_horizon_returns,
+                underlying_horizon_returns=underlying_horizon_returns,
+            )
+        gate_enabled = (
+            rebalancing_policy is not None
+            and rebalancing_policy.rebalancing_failure_is_release_gate
+        )
+        rebalancing_gate_pass = (
+            rebalanced is None or rebalanced.passed or not gate_enabled
+        )
+        passed = static_pass and rebalancing_gate_pass
         outcomes.append(
             CandidateStressOutcome(
                 scenario_id=scenario.scenario_id,
@@ -217,6 +299,36 @@ def evaluate_candidate_stresses(
                 stressed_hedged_return=stressed_hedged_return,
                 return_improvement=stressed_hedged_return - valued.portfolio_return,
                 passed=passed,
+                static_pass=static_pass,
+                rebalancing_pass=(rebalanced.passed if rebalanced else None),
+                rebalanced_terminal_payoff=(
+                    rebalanced.terminal_payoff if rebalanced else None
+                ),
+                rebalanced_hedge_profit=(
+                    rebalanced.hedge_profit if rebalanced else None
+                ),
+                rebalanced_hedged_return=(
+                    rebalanced.hedged_return if rebalanced else None
+                ),
+                cumulative_rebalance_cost=(
+                    rebalanced.cash_ledger.execution_cost
+                    - candidate.estimated_execution_cost
+                    if rebalanced
+                    else None
+                ),
+                rebalanced_premium_cash_flow=(
+                    rebalanced.cash_ledger.premium_cash_flow if rebalanced else None
+                ),
+                rebalance_turnover=(rebalanced.turnover if rebalanced else None),
+                maximum_rebalance_delay_trading_days=(
+                    rebalanced.maximum_delay_trading_days if rebalanced else None
+                ),
+                final_position=(rebalanced.final_position if rebalanced else None),
+                cash_ledger=(rebalanced.cash_ledger if rebalanced else None),
+                rebalance_events=(rebalanced.events if rebalanced else ()),
+                rebalancing_failure_reasons=(
+                    rebalanced.failure_reasons if rebalanced else ()
+                ),
             )
         )
 
@@ -238,6 +350,21 @@ def evaluate_candidate_stresses(
             "Reprice, resize or reserve before quoting under stressed spreads in: "
             + ", ".join(failed_cost)
         )
+    failed_rebalancing = [
+        item.scenario_id for item in outcomes if item.rebalancing_pass is False
+    ]
+    if failed_rebalancing:
+        assert rebalancing_policy is not None
+        if rebalancing_policy.rebalancing_failure_is_release_gate:
+            restrictions.append(
+                "Do not release until required rebalancing failures are resolved in: "
+                + ", ".join(failed_rebalancing)
+            )
+        else:
+            restrictions.append(
+                "Diagnostic only: required rebalancing failures occurred in: "
+                + ", ".join(failed_rebalancing)
+            )
     return CandidateStressEvaluation(
         scenario_set_id=scenario_set.scenario_set_id,
         scenario_set_version=scenario_set.version,
@@ -247,6 +374,22 @@ def evaluate_candidate_stresses(
         outcomes=tuple(outcomes),
         passed=all(item.passed for item in outcomes),
         usage_restrictions=tuple(restrictions),
+        rebalancing_policy_id=(
+            rebalancing_policy.policy_id if rebalancing_policy else None
+        ),
+        rebalancing_policy_version=(
+            rebalancing_policy.version if rebalancing_policy else None
+        ),
+        rebalancing_failure_is_release_gate=(
+            rebalancing_policy.rebalancing_failure_is_release_gate
+            if rebalancing_policy
+            else None
+        ),
+        rebalancing_pass=(
+            all(item.rebalancing_pass is not False for item in outcomes)
+            if rebalancing_policy
+            else None
+        ),
     )
 
 

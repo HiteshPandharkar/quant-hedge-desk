@@ -236,8 +236,23 @@ reference notional, and enforce the mandate's three-day participation capacity.
 ratio across every changed leg. `execute_rebalance_proposal(...)` commits a full
 or partial fill only when the resulting position and cumulative costs pass all
 existing hard constraints; pricing, capacity, or feasibility rejection returns
-the original position and ledger unchanged. Sequential path processing and the
-public batch facade remain later roadmap increments.
+the original position and ledger unchanged.
+
+The Sprint 4 sequential engine applies each path step before considering a
+resize, maintains an immutable position and cumulative cash ledger, and carries
+blocked requests forward with current-state target and price recalculation.
+Completed-late, partial, pricing-rejected, feasibility-rejected, and unresolved
+requests remain explicit failures. The result retains the static stress fields
+and additionally reports final position, event history, terminal payoff,
+premium cash flow, incremental execution cost, turnover, delay, and the
+rebalanced hedged return.
+
+`stress_candidate_hedge(...)` enables this flow when both
+`rebalancing_policy_path` and `market_data_path` are supplied. Historical data
+is used only for the mandate feasibility check on proposed fills. Omitting both
+arguments preserves the original static behavior. A policy can make failures a
+release gate or retain them as diagnostic-only restrictions. The public batch
+facade remains the Sprint 5 roadmap increment.
 
 ## Refresh market data
 

@@ -60,7 +60,40 @@ class CandidateStressEvaluatorTests(unittest.TestCase):
         self.assertIn("portfolio floor", self.result.usage_restrictions[0])
         self.assertIn("three-day full unwind", self.result.usage_restrictions[1])
         self.assertIn("Reprice", self.result.usage_restrictions[2])
-        json.dumps(self.result.to_dict())
+        payload = self.result.to_dict()
+        self.assertNotIn("rebalancing_policy_id", payload)
+        self.assertNotIn("rebalanced_hedged_return", payload["outcomes"][0])
+        json.dumps(payload)
+
+    def test_single_candidate_facade_accepts_optional_rebalancing_inputs(self) -> None:
+        case = ROOT / "cases" / "asteria_capital"
+
+        result = stress_candidate_hedge(
+            portfolio_path=case / "portfolio.csv",
+            mandate_path=case / "mandate.yaml",
+            candidate_path=case / "candidate_03_nifty_protective_put.yaml",
+            stress_scenario_path=case / "named_stress_correlation_liquidity.yaml",
+            supplied_total_market_value=5_000_000_000,
+            rebalancing_policy_path=case / "rebalancing_stress_policy.yaml",
+            market_data_path=ROOT / "data" / "market" / "eod_prices.csv",
+        )
+
+        self.assertEqual(
+            result.rebalancing_policy_id, "asteria-rebalancing-stress-v1"
+        )
+        self.assertIsNotNone(result.outcomes[0].rebalanced_hedged_return)
+
+    def test_single_candidate_facade_requires_policy_and_history_together(self) -> None:
+        case = ROOT / "cases" / "asteria_capital"
+
+        with self.assertRaisesRegex(ValueError, "supplied together"):
+            stress_candidate_hedge(
+                portfolio_path=case / "portfolio.csv",
+                mandate_path=case / "mandate.yaml",
+                candidate_path=case / "candidate_03_nifty_protective_put.yaml",
+                stress_scenario_path=case / "named_stress_correlation_liquidity.yaml",
+                rebalancing_policy_path=case / "rebalancing_stress_policy.yaml",
+            )
 
 
 if __name__ == "__main__":

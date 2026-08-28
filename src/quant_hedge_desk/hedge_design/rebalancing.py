@@ -379,8 +379,14 @@ def propose_rebalance(
     current_portfolio_value: Decimal | str | int,
     current_underlying_levels: Mapping[str, Decimal | str | int],
     is_terminal_step: bool,
+    required_trigger: RebalanceTriggerType | None = None,
 ) -> RebalanceProposal | None:
-    """Create and price a resize request without executing or mutating state."""
+    """Create and price a resize request without executing or mutating state.
+
+    ``required_trigger`` carries an earlier blocked request into the current
+    step.  Its target and prices are deliberately recalculated from current
+    market state rather than reusing a stale proposal.
+    """
 
     targets = target_quantities(
         candidate,
@@ -391,18 +397,26 @@ def propose_rebalance(
     current = dict(position.quantities)
     if set(current) != set(targets):
         raise RebalancingValidationError("position contracts do not match candidate legs")
-    trigger = determine_rebalance_trigger(
-        step_number=step.step_number,
-        is_terminal_step=is_terminal_step,
-        drifts=coverage_drifts(
-            candidate,
-            position,
-            inception_portfolio_value=inception_portfolio_value,
-            current_portfolio_value=current_portfolio_value,
-            current_underlying_levels=current_underlying_levels,
-        ),
-        policy=policy,
-    )
+    if required_trigger is None:
+        trigger = determine_rebalance_trigger(
+            step_number=step.step_number,
+            is_terminal_step=is_terminal_step,
+            drifts=coverage_drifts(
+                candidate,
+                position,
+                inception_portfolio_value=inception_portfolio_value,
+                current_portfolio_value=current_portfolio_value,
+                current_underlying_levels=current_underlying_levels,
+            ),
+            policy=policy,
+        )
+    else:
+        try:
+            trigger = RebalanceTriggerType(required_trigger)
+        except (TypeError, ValueError) as exc:
+            raise RebalancingValidationError("required_trigger is unsupported") from exc
+        if is_terminal_step:
+            trigger = None
     changes = {key: targets[key] - current[key] for key in targets}
     if trigger is None or not any(changes.values()):
         return None
@@ -625,10 +639,10 @@ def execute_rebalance_proposal(
             position, cash_ledger, event, Decimal("0"), feasibility
         )
 
-    if proposal.is_rejected:
-        return rejected(f"PRICING_REJECTED: {proposal.rejection_reason}")
     if not step.rebalancing_allowed:
         return rejected("REBALANCING_NOT_ALLOWED")
+    if proposal.is_rejected:
+        return rejected(f"PRICING_REJECTED: {proposal.rejection_reason}")
 
     filled_changes, fill_ratio = structure_preserving_fill(
         candidate,
