@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import ROUND_CEILING, Decimal, InvalidOperation
+from types import MappingProxyType
 from typing import Mapping, Sequence
 
 from quant_hedge_desk.analytics.risk import expected_shortfall
@@ -10,6 +12,7 @@ from quant_hedge_desk.domain.enums import LegDirection, OptionType
 from quant_hedge_desk.domain.models.derivative_legs import FutureLeg, VanillaOptionLeg
 from quant_hedge_desk.domain.models.mandate import Mandate
 from quant_hedge_desk.domain.models.portfolio import Portfolio
+from quant_hedge_desk.domain.models.rebalancing import CashLedger, PositionState
 from quant_hedge_desk.hedge_design.candidate_generator import HedgeCandidate
 from quant_hedge_desk.hedge_design.constraint_enums import FeasibilityStatus
 from quant_hedge_desk.hedge_design.constraint_models import (
@@ -19,11 +22,7 @@ from quant_hedge_desk.hedge_design.constraint_models import (
     InfeasibilityDiagnosis,
 )
 from quant_hedge_desk.hedge_design.evaluator import evaluate_aggregate_terminal_payoff
-from quant_hedge_desk.hedge_design.scenario_calculations import (
-    all_in_hedge_cost,
-    net_option_premium,
-    terminal_levels_from_returns,
-)
+from quant_hedge_desk.hedge_design.scenario_calculations import terminal_levels_from_returns
 
 
 class CandidateConstraintCalculator:
@@ -37,6 +36,11 @@ class CandidateConstraintCalculator:
         portfolio: Portfolio,
         portfolio_horizon_returns: Sequence[float],
         underlying_horizon_returns: Mapping[str, Sequence[float]],
+        position: PositionState | None = None,
+        cumulative_cost_basis: CashLedger | None = None,
+        market_volume_multipliers: (
+            Mapping[str, Decimal | str | int] | None
+        ) = None,
     ) -> None:
         self.candidate = candidate
         self.mandate = mandate
@@ -49,14 +53,30 @@ class CandidateConstraintCalculator:
         self.required_symbols = {
             leg.underlying.value for leg in self.candidate.legs
         }
+        self.position = position or self._initial_position()
+        self.cumulative_cost_basis = (
+            cumulative_cost_basis or self._initial_cost_basis()
+        )
+        self.market_volume_multipliers = self._volume_multipliers(
+            market_volume_multipliers or {}
+        )
+        self._validate_position()
+        self.position_legs = tuple(
+            replace(leg, quantity=self.position.quantities[self._contract_id(leg)])
+            for leg in self.candidate.legs
+            if self.position.quantities[self._contract_id(leg)] > 0
+        )
         self._validate_return_inputs()
 
     def assess(self) -> CandidateFeasibilityAssessment:
         """Calculate metrics, diagnostics, and the aggregate feasibility status."""
 
         portfolio_value = self.portfolio.total_market_value
-        net_premium = net_option_premium(self.candidate)
-        all_in_cost = all_in_hedge_cost(self.candidate)
+        net_premium = (
+            self.cumulative_cost_basis.premium_paid
+            - self.cumulative_cost_basis.premium_received
+        )
+        all_in_cost = net_premium + self.cumulative_cost_basis.execution_cost
         all_in_cost_fraction = all_in_cost / portfolio_value
         include_execution = self.mandate.client.cost.includes_execution_cost
         premium_constraint_cost = all_in_cost if include_execution else net_premium
@@ -120,7 +140,7 @@ class CandidateConstraintCalculator:
             family=self.candidate.family.value,
             status=status,
             net_option_premium=net_premium,
-            estimated_execution_cost=self.candidate.estimated_execution_cost,
+            estimated_execution_cost=self.cumulative_cost_basis.execution_cost,
             all_in_client_cost=all_in_cost,
             all_in_cost_fraction=all_in_cost_fraction,
             premium_constraint_cost=premium_constraint_cost,
@@ -318,7 +338,7 @@ class CandidateConstraintCalculator:
             self.candidate.initial_levels[leg.underlying.value]
             * leg.quantity
             * leg.contract_multiplier
-            for leg in self.candidate.legs
+            for leg in self.position_legs
         )
         protected = sum(
             (
@@ -350,7 +370,7 @@ class CandidateConstraintCalculator:
                 },
             )
             payoff = evaluate_aggregate_terminal_payoff(
-                self.candidate.legs, terminal_levels
+                self.position_legs, terminal_levels
             )
             results.append(
                 float(
@@ -382,7 +402,7 @@ class CandidateConstraintCalculator:
                 Decimal("0"),
                 -(
                     evaluate_aggregate_terminal_payoff(
-                        self.candidate.legs, scenario.terminal_levels
+                        self.position_legs, scenario.terminal_levels
                     )
                     - all_in_cost
                 )
@@ -401,7 +421,7 @@ class CandidateConstraintCalculator:
         unwind_days: list[Decimal] = []
         details: list[str] = []
         inputs_valid = True
-        for number, leg in enumerate(self.candidate.legs, start=1):
+        for number, leg in enumerate(self.position_legs, start=1):
             raw_volume = leg.liquidity_attributes.get("normal_daily_volume")
             try:
                 volume = Decimal(str(raw_volume))
@@ -411,7 +431,10 @@ class CandidateConstraintCalculator:
                 inputs_valid = False
                 details.append(f"leg {number} has no positive normal_daily_volume")
                 continue
-            days = Decimal(leg.quantity) / (volume * maximum_participation)
+            stressed_volume = volume * self.market_volume_multipliers.get(
+                leg.underlying.value, Decimal("1")
+            )
+            days = Decimal(leg.quantity) / (stressed_volume * maximum_participation)
             unwind_days.append(days)
             details.append(f"leg {number}: {days.quantize(Decimal('0.001'))} days")
         estimated_days = max(unwind_days, default=Decimal("Infinity"))
@@ -429,7 +452,7 @@ class CandidateConstraintCalculator:
             + leg.expiry.month
             - quote.month
             - (leg.expiry.day < quote.day)
-            for leg in self.candidate.legs
+            for leg in self.position_legs
         }
 
     def _eligibility_passes(self, expiry_months: set[int]) -> bool:
@@ -441,7 +464,7 @@ class CandidateConstraintCalculator:
                 not isinstance(leg, VanillaOptionLeg)
                 or leg.option_style is eligibility.option_style
             )
-            for leg in self.candidate.legs
+            for leg in self.position_legs
         ) and expiry_months.issubset(set(eligibility.approved_expiry_months))
 
     def _diagnostics(
@@ -479,7 +502,7 @@ class CandidateConstraintCalculator:
                 str(premium_constraint_fraction),
                 str(client.cost.max_all_in_premium_fraction),
                 f"net option premium {net_premium}; execution cost "
-                f"{self.candidate.estimated_execution_cost}; execution cost "
+                f"{self.cumulative_cost_basis.execution_cost}; execution cost "
                 f"{'included' if include_execution else 'excluded'} by mandate",
             ),
             ConstraintDiagnostic(
@@ -509,6 +532,57 @@ class CandidateConstraintCalculator:
                 f"{len(self.portfolio_returns)} rolling horizon windows",
             ),
         )
+
+    @staticmethod
+    def _contract_id(leg: FutureLeg | VanillaOptionLeg) -> str:
+        # Import locally to keep the historical constraint module independent
+        # from proposal construction at import time.
+        from quant_hedge_desk.hedge_design.rebalancing import contract_id_for_leg
+
+        return contract_id_for_leg(leg)
+
+    def _initial_position(self) -> PositionState:
+        from quant_hedge_desk.hedge_design.rebalancing import initial_position
+
+        return initial_position(self.candidate)
+
+    def _initial_cost_basis(self) -> CashLedger:
+        from quant_hedge_desk.hedge_design.rebalancing import initial_cash_ledger
+
+        return initial_cash_ledger(self.candidate)
+
+    def _validate_position(self) -> None:
+        if not isinstance(self.position, PositionState):
+            raise TypeError("position must be a PositionState")
+        if self.position.candidate_id != self.candidate.candidate_id:
+            raise ValueError("position candidate_id does not match candidate")
+        expected = {self._contract_id(leg) for leg in self.candidate.legs}
+        if set(self.position.quantities) != expected:
+            raise ValueError("position contracts do not match candidate legs")
+        if not isinstance(self.cumulative_cost_basis, CashLedger):
+            raise TypeError("cumulative_cost_basis must be a CashLedger")
+
+    @staticmethod
+    def _volume_multipliers(
+        values: Mapping[str, Decimal | str | int],
+    ) -> Mapping[str, Decimal]:
+        if not isinstance(values, Mapping):
+            raise TypeError("market_volume_multipliers must be a mapping")
+        normalized: dict[str, Decimal] = {}
+        for raw_symbol, raw_value in values.items():
+            symbol = str(raw_symbol).strip().upper()
+            try:
+                value = Decimal(str(raw_value))
+            except (InvalidOperation, TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"market_volume_multipliers.{symbol} must be numeric"
+                ) from exc
+            if not value.is_finite() or value <= 0:
+                raise ValueError(
+                    f"market_volume_multipliers.{symbol} must be positive and finite"
+                )
+            normalized[symbol] = value
+        return MappingProxyType(dict(sorted(normalized.items())))
 
 
 __all__ = ["CandidateConstraintCalculator"]

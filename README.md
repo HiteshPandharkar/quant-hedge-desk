@@ -228,6 +228,17 @@ returns an immutable, JSON-ready request for routine or exceptional triggers;
 missing pricing inputs produce a rejected request, while terminal steps and
 rounded no-ops produce no request.
 
+The Sprint 3 execution controls assess immutable in-memory positions and
+cumulative cash ledgers without temporary candidate files. They derive the
+candidate's inception execution-cost rate, apply stressed spreads to traded
+reference notional, and enforce the mandate's three-day participation capacity.
+`structure_preserving_fill(...)` selects one deterministic whole-bundle fill
+ratio across every changed leg. `execute_rebalance_proposal(...)` commits a full
+or partial fill only when the resulting position and cumulative costs pass all
+existing hard constraints; pricing, capacity, or feasibility rejection returns
+the original position and ledger unchanged. Sequential path processing and the
+public batch facade remain later roadmap increments.
+
 ## Refresh market data
 
 The checked-in dataset is sufficient for the tests and examples. To explicitly
